@@ -15,4 +15,4 @@ Para simular el comportamiento anterior se nos pide crear 5 partidas del tipo de
 3. Cuando empieza la partida el invitado empezará tirando el dado (número aleatorio entre 1 y 6), y enviarán el valor obtenido al anfitrión, el anfitrión tirará su dado y si el valor obtenido es mayor ganará, si es menor perderá y si es igual habrá que tirar de nuevo los dados.
 4. Una vez el anfitrión conozca el resultado, se lo comunicará al invitado, enviando V si ha vencido el anfitrión, D si ha perdido el anfitrión y E si hay empate.
 5. En caso de empate se volverá a repetir el procedimiento, en caso de victoria o derrota se informará al servidor, que quitará la partida de la memoria y ambos jugadores finalizarán su ejecución.
-Práctica entre 3 compañeros.
+
