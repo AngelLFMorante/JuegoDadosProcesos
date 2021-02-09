@@ -11,6 +11,7 @@ public class Cliente implements Runnable{
             usuario.start();
         }
     }
+    //klk
 
     @Override
     public void run() {
