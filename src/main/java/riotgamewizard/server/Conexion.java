@@ -59,8 +59,9 @@ public class Conexion extends Thread {
 			crearPartida(jugador);
 		}else if(Servidor.partidas.get(Servidor.partidas.size()-1).getJugadores().size() == 1) {
 			jugador.setEsAnfitrion(false);
-			//a�adir jugador invitado
+			//añadir jugador invitado
 			Servidor.partidas.get(Servidor.partidas.size()-1).annadirJugador(jugador);
+			Servidor.mutexPartida.release();
 			mandarInfoPartida(Servidor.partidas.get(Servidor.partidas.size()-1));
 		}else {
 			jugador.setEsAnfitrion(true);
@@ -87,7 +88,7 @@ public class Conexion extends Thread {
 	}
 
 	private void crearPartida(Jugador jugador) {
-		
+		Servidor.mutexPartida.acquire();
 		Servidor.partidas.add(new Partida(jugador.getNombre().concat(jugador.getDireccion()), jugador));
 		
 	}

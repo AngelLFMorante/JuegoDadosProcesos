@@ -11,6 +11,8 @@ public class Servidor {
 	
 	public static List<Jugador> jugadores = new ArrayList<>();
 	public static List<Partida> partidas = new ArrayList<>();
+	public static Semaphore mutexPartida = new Semaphore(1);
+
 	
 	public Servidor() {
 
