@@ -1,4 +1,4 @@
-package riotgamewizard.server;
+package riotgamewizard.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -6,18 +6,21 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 public class Servidor {
 	
+	//algunas variables est�ticas
 	public static List<Jugador> jugadores = new ArrayList<>();
 	public static List<Partida> partidas = new ArrayList<>();
-	public static Semaphore mutexPartida = new Semaphore(1);
-
+	public static Semaphore mutex = new Semaphore(1);
+	public static Semaphore mutexProcesarPartida = new Semaphore(1);
 	
 	public Servidor() {
 
 	}
-
+	
+	//inicio del servidor
 	private void start() {
 		try (ServerSocket socketServer = new ServerSocket()) {
 			
@@ -38,5 +41,8 @@ public class Servidor {
 		}
 	}
 
+	public static void main(String[] args) {
+		new Servidor().start();
+	}
 
 }

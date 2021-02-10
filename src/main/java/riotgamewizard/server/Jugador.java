@@ -1,6 +1,10 @@
-package riotgamewizard.server;
+package riotgamewizard.client;
 
-public class Jugador {
+import java.io.Serializable;
+
+public class Jugador implements Serializable{
+	
+	private static final long serialVersionUID = 1L;
 	
 	private String nombre;
 	private String direccion;

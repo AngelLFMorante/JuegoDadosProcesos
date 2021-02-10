@@ -1,9 +1,12 @@
-package riotgamewizard.server;
+package riotgamewizard.client;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Partida {
+public class Partida implements Serializable{
+
+	private static final long serialVersionUID = 1L;
 	
 	private String id;
 	private Jugador anfitrion;
