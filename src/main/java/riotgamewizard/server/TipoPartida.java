@@ -2,7 +2,7 @@ package pasardatos;
 
 public enum TipoPartida {
 
-	DADOS("DADOS", 5),
+	DADOS("DADOS", 2),
 	PARCHIS("PARCHIS", 4);
 
 	private String tipoPartida;
