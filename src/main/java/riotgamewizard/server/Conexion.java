@@ -99,7 +99,7 @@ public class Conexion extends Thread {
     private TipoPartida obtenerTipoPartida(String[] datos) {
         TipoPartida[] tipos = TipoPartida.values();
         for (int i = 0; i < tipos.length; i++) {
-            if (tipos[i].getTipoPartida().equals(datos[2])) {
+            if (tipos[i].getTipoPartida().equals(datos[2].toUpperCase())) {
                 return tipos[i];
             }
         }
