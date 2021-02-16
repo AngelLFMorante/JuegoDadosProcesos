@@ -9,7 +9,6 @@ import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -40,7 +39,7 @@ public class Cliente implements Runnable {
             clientSocket.connect(addr);
             enviarDatos(clientSocket);
             recibirDatos(clientSocket);
-            //enviarResultado(clientSocket);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -65,9 +64,8 @@ public class Cliente implements Runnable {
                 jugadorAnf.setDireccion(partida.getJugadores().get(1).getDireccion());
                 jugadorAnf.setPuerto(partida.getJugadores().get(1).getPuerto());
                 crearSocket1vs1(jugadorAnf);
-
+                unirseSocket1vs1(clientSocket, jugadorAnf);
             }
-
 
             if (partida.getJugadores().get(0).isEsAnfitrion() == true) {
                 Servidor.mutex.release();
@@ -100,14 +98,11 @@ public class Cliente implements Runnable {
         ServerSocket socket = new ServerSocket();
         InetSocketAddress inetAdr = new InetSocketAddress(jugadorAnf.getDireccion(), jugadorAnf.getPuerto());
         socket.bind(inetAdr);
-        socket.accept();
-        
+
         //SimuladorJuego juego = new SimuladorJuego();
         //int tirada = juego.getTirada();
         String resultado;
-        
-        
-        
+
         try (Socket newSocket = socket.accept();
                 InputStream is = newSocket.getInputStream();
                 OutputStream os = newSocket.getOutputStream();
@@ -117,34 +112,32 @@ public class Cliente implements Runnable {
                 // Flujos de líneas
                 BufferedReader bReader = new BufferedReader(isr);
                 PrintWriter pWriter = new PrintWriter(osw);) {
-            System.out.println("Conexión recibida");
             String mensaje = bReader.readLine();
-            
-            
+
             //if (mensaje > tirada){
             System.out.println("El jugador no anfitrion ha ganado con un: " + mensaje);
-            resultado="V";
+            resultado = "V";
 
             //else if (mensaje < tirada){
             System.out.println("El jugador anfitrion ha ganado con un: " //+ tirada
             );
-            resultado="D";
+            resultado = "D";
             //else if ( mensaje == tirada){
-            System.out.println("Han empatado con un: "+ mensaje);
-            resultado="E";
-            
+            System.out.println("Han empatado con un: " + mensaje);
+            resultado = "E";
+
+            pWriter.print(resultado);
+            pWriter.flush();
         }
     }
 
     private void unirseSocket1vs1(Socket clientSocket, Jugador jugadorAnf) throws IOException {
         InetSocketAddress inetAdr = new InetSocketAddress(jugadorAnf.getDireccion(), jugadorAnf.getPuerto());
         clientSocket.connect(inetAdr);
-        
-        
+        String resultado;
+
         //SimuladorJuego juego = new SimuladorJuego();
         //int tirada = juego.getTirada()
-        
-        
         try (InputStream is = clientSocket.getInputStream();
                 OutputStream os = clientSocket.getOutputStream();
                 // Flujos que manejan caracteres
@@ -153,15 +146,34 @@ public class Cliente implements Runnable {
                 // Flujos de líneas
                 BufferedReader bReader = new BufferedReader(isr);
                 PrintWriter pWriter = new PrintWriter(osw)) {
-            
+
             //enviar resultado de la partida
-            System.out.println("Enviando mensaje");
             String mensaje = "Aqui va lo que le ha salido en la tirada al jugador no anfitrion";
             pWriter.print(mensaje);
             pWriter.flush();
-            System.out.println("Mensaje enviado");
+            resultado = bReader.readLine();
+
+            if (resultado.equals("V") || resultado.equals("D")) {
+                enviarResultado(clientSocket, resultado);
+            } else if (resultado.equals("E")) {
+                unirseSocket1vs1(clientSocket, jugadorAnf);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void enviarResultado(Socket clientSocket, String resultado) {
+        //enviar resultado a servidor
+        try {
+            DataOutputStream dOut = new DataOutputStream(clientSocket.getOutputStream());
+
+            dOut.writeUTF(resultado);
+            dOut.flush();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 }
+
