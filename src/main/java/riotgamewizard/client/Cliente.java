@@ -1,10 +1,19 @@
 package riotgamewizard.client;
 
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
+import riotgamewizard.server.Jugador;
 import riotgamewizard.server.Partida;
 import riotgamewizard.server.Servidor;
 
@@ -17,7 +26,7 @@ public class Cliente implements Runnable {
         for (int i = 0; i < 10; i++) {
             Thread usuario = new Thread(this);
             usuario.setName("Jugador".concat(String.valueOf(i)));
-            usuario.start(); 
+            usuario.start();
         }
     }
 
@@ -25,52 +34,134 @@ public class Cliente implements Runnable {
     public void run() {
 
         try (Socket clientSocket = new Socket()) {
-            System.out.println("Estableciendo la conexión");
+            Jugador jugadorAnf = new Jugador();
+            System.out.println("Estableciendo la conexiï¿½n");
             InetSocketAddress addr = new InetSocketAddress("localhost", 3333);
             clientSocket.connect(addr);
             enviarDatos(clientSocket);
             recibirDatos(clientSocket);
-            System.out.println("Terminado");
+            //enviarResultado(clientSocket);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    private void recibirDatos(Socket clientSocket) {
 
-	private void recibirDatos(Socket clientSocket) {
-		
-		try(ObjectInputStream obIn = new ObjectInputStream(clientSocket.getInputStream())){
-			Servidor.mutex.acquire();
-			Partida partida =  (Partida) obIn.readObject();
-			System.out.println(Thread.currentThread().getName()+" este es el hilo que recibo y es 0");//este es el jugador que llega el primero, con el que tendras que operar para saber si es anfitrion o no.
-			System.out.println("Nombre: "+partida.getJugadores().get(0).getNombre()+" es anfitrión : "+partida.getJugadores().get(0).isEsAnfitrion()+" vs Nombre: "+partida.getJugadores().get(1).getNombre()+" es anfitrión: "+partida.getJugadores().get(1).isEsAnfitrion());
-			Servidor.mutex.release();
-			
-		} catch (IOException | ClassNotFoundException | InterruptedException e ) {
-			e.printStackTrace();
-		}
-		
-		
-	}
+        try (ObjectInputStream obIn = new ObjectInputStream(clientSocket.getInputStream())) {
+            Servidor.mutex.acquire();
+            Partida partida = (Partida) obIn.readObject();
+            Jugador jugadorAnf = new Jugador();
+            //Asignamos los datos de la partida al jugador anfitrion que la jugaran.
+
+            if (partida.getJugadores().get(0).isEsAnfitrion() == true) {
+                jugadorAnf.setNombre(partida.getJugadores().get(0).getNombre());
+                jugadorAnf.setDireccion(partida.getJugadores().get(0).getDireccion());
+                jugadorAnf.setPuerto(partida.getJugadores().get(0).getPuerto());
+                crearSocket1vs1(jugadorAnf);
+                unirseSocket1vs1(clientSocket, jugadorAnf);
+            } else {
+                jugadorAnf.setNombre(partida.getJugadores().get(1).getNombre());
+                jugadorAnf.setDireccion(partida.getJugadores().get(1).getDireccion());
+                jugadorAnf.setPuerto(partida.getJugadores().get(1).getPuerto());
+                crearSocket1vs1(jugadorAnf);
+
+            }
 
 
-	private void enviarDatos(Socket clientSocket) throws IOException {
-		try {
-			DataOutputStream dOut = new DataOutputStream(clientSocket.getOutputStream());
-		    
-		    System.out.println("Enviando mensaje");
-		    
-		    String mensaje = "NewGame,"+Thread.currentThread().getName()+",DADOS";
-		    dOut.writeUTF(mensaje);
-		    dOut.flush();
-		    System.out.println("Mensaje enviado");
+            if (partida.getJugadores().get(0).isEsAnfitrion() == true) {
+                Servidor.mutex.release();
+            }
 
-		}catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+        } catch (IOException | ClassNotFoundException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void enviarDatos(Socket clientSocket) throws IOException {
+        try {
+            DataOutputStream dOut = new DataOutputStream(clientSocket.getOutputStream());
+
+            String mensaje = "NewGame," + Thread.currentThread().getName() + ",DADOS";
+            dOut.writeUTF(mensaje);
+            dOut.flush();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) {
-		new Cliente().logica();
-	}
+        new Cliente().logica();
+    }
+
+    private void crearSocket1vs1(Jugador jugadorAnf) throws IOException {
+        ServerSocket socket = new ServerSocket();
+        InetSocketAddress inetAdr = new InetSocketAddress(jugadorAnf.getDireccion(), jugadorAnf.getPuerto());
+        socket.bind(inetAdr);
+        socket.accept();
+        
+        //SimuladorJuego juego = new SimuladorJuego();
+        //int tirada = juego.getTirada();
+        String resultado;
+        
+        
+        
+        try (Socket newSocket = socket.accept();
+                InputStream is = newSocket.getInputStream();
+                OutputStream os = newSocket.getOutputStream();
+                // Flujos que manejan caracteres
+                InputStreamReader isr = new InputStreamReader(is);
+                OutputStreamWriter osw = new OutputStreamWriter(os);
+                // Flujos de líneas
+                BufferedReader bReader = new BufferedReader(isr);
+                PrintWriter pWriter = new PrintWriter(osw);) {
+            System.out.println("Conexión recibida");
+            String mensaje = bReader.readLine();
+            
+            
+            //if (mensaje > tirada){
+            System.out.println("El jugador no anfitrion ha ganado con un: " + mensaje);
+            resultado="V";
+
+            //else if (mensaje < tirada){
+            System.out.println("El jugador anfitrion ha ganado con un: " //+ tirada
+            );
+            resultado="D";
+            //else if ( mensaje == tirada){
+            System.out.println("Han empatado con un: "+ mensaje);
+            resultado="E";
+            
+        }
+    }
+
+    private void unirseSocket1vs1(Socket clientSocket, Jugador jugadorAnf) throws IOException {
+        InetSocketAddress inetAdr = new InetSocketAddress(jugadorAnf.getDireccion(), jugadorAnf.getPuerto());
+        clientSocket.connect(inetAdr);
+        
+        
+        //SimuladorJuego juego = new SimuladorJuego();
+        //int tirada = juego.getTirada()
+        
+        
+        try (InputStream is = clientSocket.getInputStream();
+                OutputStream os = clientSocket.getOutputStream();
+                // Flujos que manejan caracteres
+                InputStreamReader isr = new InputStreamReader(is);
+                OutputStreamWriter osw = new OutputStreamWriter(os);
+                // Flujos de líneas
+                BufferedReader bReader = new BufferedReader(isr);
+                PrintWriter pWriter = new PrintWriter(osw)) {
+            
+            //enviar resultado de la partida
+            System.out.println("Enviando mensaje");
+            String mensaje = "Aqui va lo que le ha salido en la tirada al jugador no anfitrion";
+            pWriter.print(mensaje);
+            pWriter.flush();
+            System.out.println("Mensaje enviado");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
