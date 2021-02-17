@@ -51,25 +51,25 @@ public class Cliente implements Runnable {
             Servidor.mutex.acquire();
             Partida partida = (Partida) obIn.readObject();
             Jugador jugadorAnf = new Jugador();
+
             //Asignamos los datos de la partida al jugador anfitrion que la jugaran.
+            for (Jugador jugador : partida.getJugadores()) {
+                if (jugador.isEsAnfitrion()) {
+                    jugadorAnf = jugador;
+                    System.out.println(jugador.getNombre() + " " + partida.getId());
+                    //crearSocket1vs1(jugador);
+                    Servidor.mutex.release();
 
-            if (partida.getJugadores().get(0).isEsAnfitrion() == true) {
-                jugadorAnf.setNombre(partida.getJugadores().get(0).getNombre());
-                jugadorAnf.setDireccion(partida.getJugadores().get(0).getDireccion());
-                jugadorAnf.setPuerto(partida.getJugadores().get(0).getPuerto());
-                crearSocket1vs1(jugadorAnf);
-                unirseSocket1vs1(clientSocket, jugadorAnf);
-            } else {
-                jugadorAnf.setNombre(partida.getJugadores().get(1).getNombre());
-                jugadorAnf.setDireccion(partida.getJugadores().get(1).getDireccion());
-                jugadorAnf.setPuerto(partida.getJugadores().get(1).getPuerto());
-                crearSocket1vs1(jugadorAnf);
-                unirseSocket1vs1(clientSocket, jugadorAnf);
-            }
+                } else {
+                    System.out.println(jugador.getNombre() + " " + partida.getId());
+                    //unirseSocket1vs1(clientSocket, jugadorAnf, partida);
+                    Servidor.mutex.release();
 
-            if (partida.getJugadores().get(0).isEsAnfitrion() == true) {
-                Servidor.mutex.release();
+                }
+
             }
+            String resultado = null;
+            enviarResultado(resultado, partida);
 
         } catch (IOException | ClassNotFoundException | InterruptedException e) {
             e.printStackTrace();
@@ -131,13 +131,14 @@ public class Cliente implements Runnable {
         }
     }
 
-    private void unirseSocket1vs1(Socket clientSocket, Jugador jugadorAnf) throws IOException {
+    private void unirseSocket1vs1(Socket clientSocket, Jugador jugadorAnf, Partida partida) throws IOException {
         InetSocketAddress inetAdr = new InetSocketAddress(jugadorAnf.getDireccion(), jugadorAnf.getPuerto());
         clientSocket.connect(inetAdr);
         String resultado;
 
         //SimuladorJuego juego = new SimuladorJuego();
         //int tirada = juego.getTirada()
+        
         try (InputStream is = clientSocket.getInputStream();
                 OutputStream os = clientSocket.getOutputStream();
                 // Flujos que manejan caracteres
@@ -154,21 +155,23 @@ public class Cliente implements Runnable {
             resultado = bReader.readLine();
 
             if (resultado.equals("V") || resultado.equals("D")) {
-                enviarResultado(clientSocket, resultado);
+                //enviarResultado(resultado, partida);
             } else if (resultado.equals("E")) {
-                unirseSocket1vs1(clientSocket, jugadorAnf);
+                unirseSocket1vs1(clientSocket, jugadorAnf, partida);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void enviarResultado(Socket clientSocket, String resultado) {
-        //enviar resultado a servidor
-        try {
+    private void enviarResultado(String resultado, Partida partida) {
+        //enviar resultado a servidor4
+        try (Socket clientSocket = new Socket()) {
+            InetSocketAddress addr = new InetSocketAddress("localhost", 3333);
+            clientSocket.connect(addr);
             DataOutputStream dOut = new DataOutputStream(clientSocket.getOutputStream());
-
-            dOut.writeUTF(resultado);
+            String mensaje = "V" + "," + partida.getId();
+            dOut.writeUTF(mensaje);
             dOut.flush();
 
         } catch (IOException e) {
@@ -176,4 +179,3 @@ public class Cliente implements Runnable {
         }
     }
 }
-
