@@ -7,21 +7,31 @@ import java.util.List;
 public class Partida implements Serializable{
 
 	private static final long serialVersionUID = 1L;
-	
+
 	private String id;
 	private Jugador anfitrion;
 	private List<Jugador> jugadores;
+	private String tipoPartida;
 
-	public Partida(String id, Jugador anfitrion) {
+	public Partida(String id, Jugador anfitrion, String tipoPartida) {
 		this.anfitrion  = anfitrion;
 		this.id = id;
+		this.tipoPartida = tipoPartida;
 		this.jugadores = new ArrayList<>();
 		this.jugadores.add(anfitrion);
 	}
-	
+
 	//jugador invitado
 	public void annadirJugador(Jugador jugador) {
 		this.jugadores.add(jugador);
+	}
+
+	public void annadirTipoPartida(TipoPartida tipo) {
+		this.tipoPartida = tipo.getTipoPartida();
+	}
+
+	public String getTipoPartida() {
+		return tipoPartida;
 	}
 
 	public String getId() {
@@ -47,7 +57,7 @@ public class Partida implements Serializable{
 	public void setJugadores(List<Jugador> jugadores) {
 		this.jugadores = jugadores;
 	}
-	
-	
-	
+
+
+
 }
