@@ -18,8 +18,12 @@ import riotgamewizard.server.Servidor;
 
 public class Cliente implements Runnable {
 
+    public static void main(String[] args) {
+        new Cliente().logica();
+    }
+
     /**
-     * Inicializar cliente con 10 peticiones simultaneas.
+     * Creamos 10 clientes.
      */
     public void logica() {
         for (int i = 0; i < 10; i++) {
@@ -28,11 +32,12 @@ public class Cliente implements Runnable {
             usuario.start();
         }
     }
+    //Creamos el socket cliente y llamamos a los metodos de la clase
 
     @Override
     public void run() {
 
-        try (Socket clientSocket = new Socket()) {
+        try ( Socket clientSocket = new Socket()) {
             Jugador jugadorAnf = new Jugador();
             System.out.println("Estableciendo la conexiï¿½n");
             InetSocketAddress addr = new InetSocketAddress("localhost", 3333);
@@ -45,14 +50,22 @@ public class Cliente implements Runnable {
         }
     }
 
+    /**
+     * El metodo recibirDatos recibe los datos de la partida que ya contiene los
+     * jugadores y extrae estos datos asignandolos a jugadorAnf quien creara el
+     * servidor donde jugaran.
+     *
+     * @param clientSocket
+     */
     private void recibirDatos(Socket clientSocket) {
 
-        try (ObjectInputStream obIn = new ObjectInputStream(clientSocket.getInputStream())) {
+        try ( ObjectInputStream obIn = new ObjectInputStream(clientSocket.getInputStream())) {
             Servidor.mutex.acquire();
             Partida partida = (Partida) obIn.readObject();
             Jugador jugadorAnf = new Jugador();
 
-            //Asignamos los datos de la partida al jugador anfitrion que la jugaran.
+            //Recorremos la partida sacando si es Anfitrion o no, en ek primer paso creara el servidor 
+            //donde se conectara el juagador 2 en el segundo caso
             for (Jugador jugador : partida.getJugadores()) {
                 if (jugador.isEsAnfitrion()) {
                     jugadorAnf = jugador;
@@ -90,30 +103,28 @@ public class Cliente implements Runnable {
         }
     }
 
-    public static void main(String[] args) {
-        new Cliente().logica();
-    }
-
+    /**
+     * Este metodo crea el socket servidor que leera la informacion pasada por
+     * el jugador no anfitrion y comparara las tiradas decidiendo un ganador.
+     *
+     * @param jugadorAnf Jugador anfitrion de la partida
+     * @throws IOException
+     */
     private void crearSocket1vs1(Jugador jugadorAnf) throws IOException {
         ServerSocket socket = new ServerSocket();
         InetSocketAddress inetAdr = new InetSocketAddress(jugadorAnf.getDireccion(), jugadorAnf.getPuerto());
         socket.bind(inetAdr);
-
+        //llamamos al simulador para que el anfitrion realice su tirada
         //SimuladorJuego juego = new SimuladorJuego();
         //int tirada = juego.getTirada();
         String resultado;
 
-        try (Socket newSocket = socket.accept();
-                InputStream is = newSocket.getInputStream();
-                OutputStream os = newSocket.getOutputStream();
-                // Flujos que manejan caracteres
-                InputStreamReader isr = new InputStreamReader(is);
-                OutputStreamWriter osw = new OutputStreamWriter(os);
-                // Flujos de líneas
-                BufferedReader bReader = new BufferedReader(isr);
-                PrintWriter pWriter = new PrintWriter(osw);) {
+        try ( Socket newSocket = socket.accept();  InputStream is = newSocket.getInputStream();  OutputStream os = newSocket.getOutputStream(); // Flujos que manejan caracteres
+                  InputStreamReader isr = new InputStreamReader(is);  OutputStreamWriter osw = new OutputStreamWriter(os); // Flujos de líneas
+                  BufferedReader bReader = new BufferedReader(isr);  PrintWriter pWriter = new PrintWriter(osw);) {
             String mensaje = bReader.readLine();
-
+            //Como aun no tenemos la clase Simulador comento los condicionales que
+            //guardarian el resultado victoria,empate o derrota
             //if (mensaje > tirada){
             System.out.println("El jugador no anfitrion ha ganado con un: " + mensaje);
             resultado = "V";
@@ -135,20 +146,15 @@ public class Cliente implements Runnable {
         InetSocketAddress inetAdr = new InetSocketAddress(jugadorAnf.getDireccion(), jugadorAnf.getPuerto());
         clientSocket.connect(inetAdr);
         String resultado;
-
+        //llamamos al simulador para obtener la primera tirada
         //SimuladorJuego juego = new SimuladorJuego();
         //int tirada = juego.getTirada()
-        
-        try (InputStream is = clientSocket.getInputStream();
-                OutputStream os = clientSocket.getOutputStream();
-                // Flujos que manejan caracteres
-                InputStreamReader isr = new InputStreamReader(is);
-                OutputStreamWriter osw = new OutputStreamWriter(os);
-                // Flujos de líneas
-                BufferedReader bReader = new BufferedReader(isr);
-                PrintWriter pWriter = new PrintWriter(osw)) {
 
-            //enviar resultado de la partida
+        try ( InputStream is = clientSocket.getInputStream();  OutputStream os = clientSocket.getOutputStream(); // Flujos que manejan caracteres
+                  InputStreamReader isr = new InputStreamReader(is);  OutputStreamWriter osw = new OutputStreamWriter(os); // Flujos de líneas
+                  BufferedReader bReader = new BufferedReader(isr);  PrintWriter pWriter = new PrintWriter(osw)) {
+
+            //enviar resultado de la tiradas
             String mensaje = "Aqui va lo que le ha salido en la tirada al jugador no anfitrion";
             pWriter.print(mensaje);
             pWriter.flush();
@@ -164,9 +170,16 @@ public class Cliente implements Runnable {
         }
     }
 
+    /**
+     * Le enviamos los resultados de cada partida 1vs1 al servidor, que se
+     * encargara de procesarlos.
+     *
+     * @param resultado Es un string que contiene V(victoria) o D(derrota).
+     * @param partida Le pasamos la partida para poder obtener la id.
+     */
     private void enviarResultado(String resultado, Partida partida) {
-        //enviar resultado a servidor4
-        try (Socket clientSocket = new Socket()) {
+        //enviar resultado a servidor
+        try ( Socket clientSocket = new Socket()) {
             InetSocketAddress addr = new InetSocketAddress("localhost", 3333);
             clientSocket.connect(addr);
             DataOutputStream dOut = new DataOutputStream(clientSocket.getOutputStream());
@@ -178,4 +191,5 @@ public class Cliente implements Runnable {
             e.printStackTrace();
         }
     }
+
 }
