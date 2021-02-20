@@ -14,7 +14,14 @@ public class Juego {
     /**
      * @param args the command line arguments
      */
-        
+//    public int getJugadorCliente() {
+//        return jugadorCliente;
+//    }
+//    
+//    public int getJugadorServidor() {
+//        return jugadorServidor;
+//    }
+//        
     public static void main(String[] args) {
             // TODO code application logic here
             
@@ -44,7 +51,10 @@ public class Juego {
             }
             }while(jugadorServidor==jugadorCliente);
         
+            
     }
+    
+    
     
 //    public int tiradaServidor(){
 //        jugadorServidor=(int)(Math.random()*6)+1;
